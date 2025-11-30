@@ -15,6 +15,11 @@ services:
     networks:
       - mongodb_network
       - api_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:$API_PORT/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
   mongodb:
     image: mongo:latest
     container_name: mongodb
@@ -31,6 +36,9 @@ services:
       - mongodb_network
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 3
   client:
     build:
       context: client
@@ -46,6 +54,11 @@ services:
       - "${CLIENT_PORT}:${CLIENT_PORT}"
     networks:
       - api_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:$CLIENT_PORT"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   mongodb-data:

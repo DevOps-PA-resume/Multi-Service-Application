@@ -49,4 +49,8 @@ router.delete('/:id', async (req, res) => {
 
 app.use('/api/v1/todos', router);
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
 app.listen(port, () => console.log(`✅ Server running on http://localhost:${port}`));
