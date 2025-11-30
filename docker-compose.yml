@@ -10,6 +10,8 @@ services:
     environment:
       PORT: ${API_PORT}
       MONGO_URI: ${MONGO_URI}
+      REDIS_URL: ${REDIS_URL}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       - mongodb
     networks:
@@ -50,8 +52,6 @@ services:
     environment:
       VITE_PORT: ${CLIENT_PORT}
       VITE_API_URL: ${API_URL}
-    ports:
-      - "${CLIENT_PORT}:${CLIENT_PORT}"
     networks:
       - api_network
     healthcheck:
@@ -64,11 +64,33 @@ services:
     container_name: cache
     hostname: cache
     restart: always
-    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
     volumes: 
       - cache:/data
     networks:
       - api_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "$REDIS_PASSWORD", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  nginx-proxy:
+    image: nginx:latest
+    container_name: nginx-proxy
+    hostname: nginx-proxy
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+    networks:
+      - api_network
+    depends_on:
+      - client
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   mongodb-data:

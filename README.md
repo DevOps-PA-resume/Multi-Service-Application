@@ -16,6 +16,8 @@ to run all the services:
 docker compose up
 ```
 
-the web client is avaible at http://localhost:3000 by default
+the web client is avaible at http://localhost/ by default
+
+only the client is accessible threw a reverse proxy
 
 ps: the code and UI/UX are bad, I just needed some small app for the services. you can check the other projects on my github to see better frontend or backend for more advanced projects.
