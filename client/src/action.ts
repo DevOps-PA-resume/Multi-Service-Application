@@ -9,9 +9,8 @@ export interface NewTodo {
     completed?: boolean
 }
 
-const API_BASE_URL =
-    import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-const TODO_ENDPOINT = `${API_BASE_URL}/api/v1/todos`
+const API_BASE_URL = '/api'
+const TODO_ENDPOINT = `${API_BASE_URL}/v1/todos`
 
 export async function getAllTodos(): Promise<Todo[]> {
     try {

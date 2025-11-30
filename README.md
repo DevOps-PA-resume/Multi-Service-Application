@@ -18,6 +18,4 @@ docker compose up
 
 the web client is avaible at http://localhost:3000 by default
 
-the api is avaible at http://localhost:8080 by default
-
 ps: the code and UI/UX are bad, I just needed some small app for the services. you can check the other projects on my github to see better frontend or backend for more advanced projects.

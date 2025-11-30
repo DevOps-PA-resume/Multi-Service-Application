@@ -10,12 +10,11 @@ services:
     environment:
       PORT: ${API_PORT}
       MONGO_URI: ${MONGO_URI}
-    ports:
-      - "${API_PORT}:${API_PORT}"
     depends_on:
       - mongodb
     networks:
       - mongodb_network
+      - api_network
   mongodb:
     image: mongo:latest
     container_name: mongodb
@@ -28,8 +27,6 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
-    ports:
-      - "27017:27017"
     networks:
       - mongodb_network
     healthcheck:
@@ -47,6 +44,8 @@ services:
       VITE_API_URL: ${API_URL}
     ports:
       - "${CLIENT_PORT}:${CLIENT_PORT}"
+    networks:
+      - api_network
 
 volumes:
   mongodb-data:
@@ -60,3 +59,6 @@ networks:
   mongodb_network:
     driver: bridge
     name: mongo-network
+  api_network:
+    driver: bridge
+    name: api-network

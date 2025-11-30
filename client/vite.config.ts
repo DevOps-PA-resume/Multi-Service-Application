@@ -4,14 +4,17 @@ import react from '@vitejs/plugin-react-swc'
 export default ({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) }
 
-  // import.meta.env.VITE_NAME available here with: process.env.VITE_NAME
-  // import.meta.env.VITE_PORT available here with: process.env.VITE_PORT
-
   return defineConfig({
     plugins: [react()],
     server: {
       host: true,
-      port: parseInt(process.env.VITE_PORT),
+      port: parseInt(process.env.VITE_PORT ?? "3000"),
+      proxy: {
+        '/api': {
+          target: process.env.VITE_API_URL || `http://api:8000`,
+          changeOrigin: true,
+        },
+      },
     },
   })
 }
