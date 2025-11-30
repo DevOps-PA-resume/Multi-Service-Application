@@ -1,3 +1,4 @@
+const { createClient } = require('redis');
 require("dotenv").config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -7,12 +8,31 @@ const app = express();
 const port = process.env.PORT || 3000;
 app.use(express.json());
 
+const REDIS_URL = process.env.REDIS_URL || '';
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD || '';
+
+const redisClient = createClient({
+  url: REDIS_URL,
+  password: REDIS_PASSWORD,
+});
+
+redisClient.on('error', err => console.error('🔴 Redis Client Error', err));
+
+async function connectRedis() {
+  try {
+    await redisClient.connect();
+    console.log('✅ Connected to Redis');
+  } catch (err) {
+    console.error('❌ Could not connect to Redis:', err);
+  }
+}
+
+connectRedis();
+
 const corsOptions = {
-  // Remplacez par l'URL exacte de votre frontend en production
-  // Pour le développement, vous pouvez utiliser '*' mais ce n'est pas sécuritaire en prod.
   origin: '*',
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true, // Si vous utilisez des cookies/sessions
+  credentials: true,
   optionsSuccessStatus: 204
 };
 
@@ -28,29 +48,100 @@ const Todo = mongoose.model('Todo', new mongoose.Schema({
 }));
 
 const router = express.Router();
+const CACHE_KEY_ALL_TODOS = 'allTodos';
+const CACHE_EXPIRATION = 60;
 
-router.get('/', async (_, res) => res.json(await Todo.find()));
-router.post('/', async (req, res) => res.status(201).json(await Todo.create(req.body)));
+router.get('/', async (_, res) => {
+  try {
+    const cachedData = await redisClient.get(CACHE_KEY_ALL_TODOS);
+    if (cachedData) {
+      console.log('Cache Hit: Returning all todos from Redis');
+      return res.json(JSON.parse(cachedData));
+    }
+
+    const todos = await Todo.find();
+
+    await redisClient.setEx(
+      CACHE_KEY_ALL_TODOS,
+      CACHE_EXPIRATION,
+      JSON.stringify(todos)
+    );
+    console.log('Cache Miss: Fetched from DB and stored in Redis');
+
+    return res.json(todos);
+  } catch (error) {
+    console.error('Error in GET /:', error);
+    const todos = await Todo.find();
+    res.json(todos);
+  }
+});
+router.post('/', async (req, res) => {
+  try {
+    const createdTodo = await Todo.create(req.body);
+
+    await redisClient.del(CACHE_KEY_ALL_TODOS);
+    console.log('Cache Invalidate: allTodos deleted after POST');
+
+    res.status(201).json(createdTodo);
+  } catch (error) {
+    console.error('Error in POST /:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
 router.get('/:id', async (req, res) => {
   const todo = await Todo.findById(req.params.id);
   if (!todo) return res.status(404).send('Not found');
   res.json(todo);
 });
 router.put('/:id', async (req, res) => {
-  const todo = await Todo.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  if (!todo) return res.status(404).send('Not found');
-  res.json(todo);
+  try {
+    const todo = await Todo.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!todo) return res.status(404).send('Not found');
+
+    await redisClient.del(CACHE_KEY_ALL_TODOS);
+    console.log('Cache Invalidate: allTodos deleted after PUT');
+
+    res.json(todo);
+  } catch (error) {
+    console.error('Error in PUT /:id:', error);
+    res.status(500).send('Internal Server Error');
+  }
 });
 router.delete('/:id', async (req, res) => {
-  const todo = await Todo.findByIdAndDelete(req.params.id);
-  if (!todo) return res.status(404).send('Not found');
-  res.sendStatus(204);
+  try {
+    const todo = await Todo.findByIdAndDelete(req.params.id);
+    if (!todo) return res.status(404).send('Not found');
+
+    await redisClient.del(CACHE_KEY_ALL_TODOS);
+    console.log('Cache Invalidate: allTodos deleted after DELETE');
+
+    res.sendStatus(204);
+  } catch (error) {
+    console.error('Error in DELETE /:id:', error);
+    res.status(500).send('Internal Server Error');
+  }
 });
 
 app.use('/api/v1/todos', router);
 
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', uptime: process.uptime() });
+  const isMongoConnected = mongoose.connection.readyState === 1;
+  const isRedisConnected = redisClient.isReady;
+
+  if (isMongoConnected && isRedisConnected) {
+    res.status(200).json({
+      status: 'ok',
+      uptime: process.uptime(),
+      db: 'connected',
+      cache: 'connected'
+    });
+  } else {
+    res.status(503).json({
+      status: 'unavailable',
+      db: isMongoConnected ? 'connected' : 'disconnected',
+      cache: isRedisConnected ? 'connected' : 'disconnected'
+    });
+  }
 });
 
 app.listen(port, () => console.log(`✅ Server running on http://localhost:${port}`));

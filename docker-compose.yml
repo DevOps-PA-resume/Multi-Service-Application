@@ -59,6 +59,16 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+  cache:
+    image: redis:6.2-alpine
+    container_name: cache
+    hostname: cache
+    restart: always
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    volumes: 
+      - cache:/data
+    networks:
+      - api_network
 
 volumes:
   mongodb-data:
@@ -67,6 +77,8 @@ volumes:
   mongodb-log:
     driver: local
     name: mongo-log
+  cache:
+    driver: local
 
 networks:
   mongodb_network:

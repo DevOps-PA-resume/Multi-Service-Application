@@ -11,12 +11,13 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "express-basic-auth": "^1.2.1",
     "express-restify-mongoose": "^9.0.10",
     "mongoose": "^8.19.2",
-    "cors": "^2.8.5"
+    "redis": "^5.10.0"
   },
   "devDependencies": {
     "eslint": "^9.37.0"
