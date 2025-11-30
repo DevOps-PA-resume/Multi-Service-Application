@@ -1,0 +1,62 @@
+services:
+  api:
+    build:
+      context: api
+      dockerfile: Dockerfile
+    container_name: api
+    hostname: api
+    env_file:
+      - .env
+    environment:
+      PORT: ${API_PORT}
+      MONGO_URI: ${MONGO_URI}
+    ports:
+      - "${API_PORT}:${API_PORT}"
+    depends_on:
+      - mongodb
+    networks:
+      - mongodb_network
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    hostname: mongodb
+    volumes:
+      - mongodb-data:/data/db/
+      - mongodb-log:/var/log/mongodb/
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    ports:
+      - "27017:27017"
+    networks:
+      - mongodb_network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+  client:
+    build:
+      context: client
+      dockerfile: Dockerfile
+    container_name: client
+    hostname: client
+    env_file:
+      - .env
+    environment:
+      VITE_PORT: ${CLIENT_PORT}
+      VITE_API_URL: ${API_URL}
+    ports:
+      - "${CLIENT_PORT}:${CLIENT_PORT}"
+
+volumes:
+  mongodb-data:
+    driver: local
+    name: mongo-data
+  mongodb-log:
+    driver: local
+    name: mongo-log
+
+networks:
+  mongodb_network:
+    driver: bridge
+    name: mongo-network

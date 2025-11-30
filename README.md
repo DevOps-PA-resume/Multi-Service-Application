@@ -1,3 +1,23 @@
 # Multi-Service-Application
 
 https://roadmap.sh/projects/multiservice-docker
+
+## How to use
+
+### 1 environment
+
+You need to create a .env file at the root of the directory, with the same content as the [env.example](env.example) (you can change the values)
+
+### 2 docker
+
+to run all the services:
+
+```bash
+docker compose up
+```
+
+the web client is avaible at http://localhost:3000 by default
+
+the api is avaible at http://localhost:8080 by default
+
+ps: the code and UI/UX are bad, I just needed some small app for the services. you can check the other projects on my github to see better frontend or backend for more advanced projects.
