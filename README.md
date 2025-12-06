@@ -8,7 +8,11 @@ https://roadmap.sh/projects/multiservice-docker
 
 You need to create a .env file at the root of the directory, with the same content as the [env.example](env.example) (you can change the values)
 
-### 2 docker
+### 2 secrets
+
+I'm using docker secrets for some vars that I don't want in my environment, I push them in the secrets/ so you can use it too.
+
+### 3 docker
 
 to run all the services:
 

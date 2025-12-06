@@ -3,13 +3,17 @@ require("dotenv").config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const fs = require("fs");
 
 const app = express();
 const port = process.env.PORT || 3000;
 app.use(express.json());
 
 const REDIS_URL = process.env.REDIS_URL || '';
-const REDIS_PASSWORD = process.env.REDIS_PASSWORD || '';
+const REDIS_PASSWORD = fs.readFileSync("/run/secrets/redis_password", "utf8").trim();
+const mongoUser = fs.readFileSync("/run/secrets/mongo_root_username", "utf8").trim();
+const mongoPass = fs.readFileSync("/run/secrets/mongo_root_password", "utf8").trim();
+const MONGO_URI = `mongodb://${mongoUser}:${mongoPass}@${process.env.DB_HOST}/${process.env.DB_NAME}?authSource=admin`;
 
 const redisClient = createClient({
   url: REDIS_URL,
@@ -38,7 +42,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => console.error(err));
 
