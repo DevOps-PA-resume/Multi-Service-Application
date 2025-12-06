@@ -1,17 +1,25 @@
-FROM node:22.14-slim
+FROM node:22.14-slim AS builder
 
-RUN apt-get update && apt-get install -y curl
-
-RUN npm install -g npm@10.9.2
-
-WORKDIR /client
+WORKDIR /app
 
 COPY package*.json ./
-
 RUN npm install
 
 COPY . .
 
+RUN npm run build
+
+
+FROM node:22.14-slim AS production
+
+RUN apt-get update && apt-get install -y curl
+
+WORKDIR /app
+
+RUN npm install -g serve
+
+COPY --from=builder /app/dist ./dist
+
 EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+CMD ["serve", "-s", "dist", "-l", "3000"]
